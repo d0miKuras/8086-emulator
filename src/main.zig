@@ -1,24 +1,23 @@
 const std = @import("std");
+const debug = std.debug;
 
 pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
-
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
-
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
-
-    try bw.flush(); // don't forget to flush!
-}
-
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const alloc = gpa.allocator();
+    defer {
+        const deinit_status = gpa.deinit();
+        _ = deinit_status;
+    }
+    var argIter = try std.process.argsWithAllocator(alloc);
+    defer argIter.deinit();
+    while(argIter.next()) |iter| {
+        debug.print("{s}\n", .{iter});
+        const file = try std.fs.cwd().createFile(iter, .{.read = true});
+        try file.seekTo(0);
+        const contents = try file.reader().readAllAlloc(alloc, 128);
+        debug.print("{s}\n", .{contents});
+        // const stat = try file.stat();
+        // debug.print("File size: {d}\n", .{stat.size});
+        defer file.close();
+    }
 }
