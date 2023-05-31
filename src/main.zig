@@ -49,7 +49,7 @@ pub fn main() !void {
     //     debug.print("{s}\n", .{iter});
     // }
     var path_buffer: [std.fs.MAX_PATH_BYTES]u8 = undefined;
-    const path = try std.fs.cwd().realpath("mov", &path_buffer);
+    const path = try std.fs.cwd().realpath("mov_multi", &path_buffer);
     debug.print("{s}\n", .{path});
     const file = try std.fs.openFileAbsolute(path, .{});
     defer file.close();
@@ -58,18 +58,23 @@ pub fn main() !void {
     defer alloc.free(contents);
     {
         var i : usize = 0;
+        debug.print("bits 16\n", .{});
         while(i < contents.len){
-            debug.print("{b}\n", .{contents[i]});
-            var val = opcodes.get(contents[i]>>2);
-            if(val) |op|{
-                debug.print("{s}\t", .{op});
-                if(contents[i] & 1 == 1){
-                    debug.print("W 1", .{});
-                    const destReg = registersW.get(contents[i + 1] >> 3 & 0b111).?;
-                    debug.print("{s},", .{destReg});
-                }
+            // debug.print("{b}\n", .{contents[i]});
+            // debug.print("{b}\n", .{contents[i + 1]});
+            var op = opcodes.get(contents[i]>>2).?;
+            debug.print("{s}\t", .{op});
+            // W 1
+            if(contents[i] & 1 == 1){
+                const destReg = registersW.get(contents[i + 1] >> 0 & 0b111).?;
+                const srcReg = registersW.get(contents[i + 1] >> 3 & 0b111).?;
+                debug.print("{s}, {s}\n", .{destReg, srcReg});
             }
-            debug.print("{b}\n", .{contents[i + 1]});
+            else{
+                const destReg = registersNoW.get(contents[i + 1] >> 0 & 0b111).?;
+                const srcReg = registersNoW.get(contents[i + 1] >> 3 & 0b111).?;
+                debug.print("{s}, {s}\n", .{destReg, srcReg});
+            }
             i += 2;
         }
     }
