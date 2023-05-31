@@ -19,7 +19,7 @@ pub fn main() !void {
     const file = try std.fs.openFileAbsolute(path, .{});
     defer file.close();
     try file.seekTo(0);
-    const contents = try file.reader().readAllAlloc(alloc, std.fs.MAX_PATH_BYTES);
+    const contents = try file.reader().readAllAlloc(alloc, 1024);
     defer alloc.free(contents);
     debug.print("{b}\n", .{contents});
 }
