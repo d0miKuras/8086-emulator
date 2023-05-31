@@ -2,7 +2,29 @@ const std = @import("std");
 const debug = std.debug;
 
 pub fn populateOpcodes(map: *std.AutoHashMap(u8, []const u8)) !void{
-    try map.put(0b10001001, "mov");
+    try map.put(0b100010, "mov");
+}
+
+pub fn populateRegistersW(map: *std.AutoHashMap(u8, []const u8)) !void{
+    try map.put(0b000, "AX");
+    try map.put(0b001, "CX");
+    try map.put(0b010, "DX");
+    try map.put(0b011, "BX");
+    try map.put(0b100, "SP");
+    try map.put(0b101, "BP");
+    try map.put(0b110, "SI");
+    try map.put(0b111, "DI");
+}
+
+pub fn populateRegistersNoW(map: *std.AutoHashMap(u8, []const u8)) !void{
+    try map.put(0b000, "AL");
+    try map.put(0b001, "CL");
+    try map.put(0b010, "DL");
+    try map.put(0b011, "BL");
+    try map.put(0b100, "AH");
+    try map.put(0b101, "CH");
+    try map.put(0b110, "DH");
+    try map.put(0b111, "BH");
 }
 
 pub fn main() !void {
@@ -15,6 +37,12 @@ pub fn main() !void {
     var opcodes = std.AutoHashMap(u8, []const u8).init(alloc);
     defer opcodes.deinit();
     try populateOpcodes(&opcodes);
+    var registersNoW = std.AutoHashMap(u8, []const u8).init(alloc);
+    defer registersNoW.deinit();
+    try populateRegistersNoW(&registersNoW);
+    var registersW = std.AutoHashMap(u8, []const u8).init(alloc);
+    defer registersW.deinit();
+    try populateRegistersW(&registersW);
     var argIter = try std.process.argsWithAllocator(alloc);
     defer argIter.deinit();
     // while(argIter.next()) |iter| {
@@ -32,9 +60,14 @@ pub fn main() !void {
         var i : usize = 0;
         while(i < contents.len){
             debug.print("{b}\n", .{contents[i]});
-            var val = opcodes.get(contents[i]);
+            var val = opcodes.get(contents[i]>>2);
             if(val) |op|{
-                debug.print("{s}\n", .{op});
+                debug.print("{s}\t", .{op});
+                if(contents[i] & 1 == 1){
+                    debug.print("W 1", .{});
+                    const destReg = registersW.get(contents[i + 1] >> 3 & 0b111).?;
+                    debug.print("{s},", .{destReg});
+                }
             }
             debug.print("{b}\n", .{contents[i + 1]});
             i += 2;
